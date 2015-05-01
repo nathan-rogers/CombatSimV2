@@ -149,27 +149,25 @@ namespace ConsoleApplication1
             roundCounter++;
             int damage = 0;
             int selectedEnemy = 0;
-            while (selectedEnemy == 0)
+            bool isTrue = true;
+            while (selectedEnemy == 0 || selectedEnemy > actor.Count())
             {
-                Console.WriteLine("Select an enemy to attack: ");
-                int.TryParse(Console.ReadLine(), out selectedEnemy);
+                Console.WriteLine("Please select which enemy to attack: ");
+                isTrue = int.TryParse(Console.ReadLine(), out selectedEnemy);
+                if (selectedEnemy > actor.Count())
+                {
+                    Console.WriteLine("That isn't a valid option, try again!");
+                }
+                if (isTrue == false)
+                {
+                    Console.WriteLine("That is not a valid otion, try again!");
+                    selectedEnemy = 0;
+                }                
 
             }
-            while (selectedEnemy > actor.Count())
-            {
-                Console.WriteLine("There are not that many enemies. Try again: ");
-                int.TryParse(Console.ReadLine(), out selectedEnemy);
-
-            }
-            while (actor[selectedEnemy - 1].HP <= 0 && selectedEnemy > actor.Count() && selectedEnemy <= 1)
-            {
-                Console.ForegroundColor = ConsoleColor.DarkRed;
-                Console.WriteLine("Please select a different enemy. This enemy is already dead!");
-
-                int.TryParse(Console.ReadLine(), out selectedEnemy);
-
-                Console.ForegroundColor = ConsoleColor.DarkCyan;
-            }
+            
+            
+            
 
 
 
@@ -372,6 +370,7 @@ Chance to Hit: 70
         }
         private AttackType ChooseAttack()
         {
+            
             Console.WriteLine("Please select an attack type: ");
 
             string attack = Console.ReadLine();
@@ -401,10 +400,10 @@ Chance to Hit: 70
         public int citiesCleared = 0;
         public int levelCounter = 1;
         public bool keepPlaying = true;
-        public Player PlayerDude { get; set; }
+        //list of enemies
         public List<Actor> Enemies { get; set; }
+        //list of players
         public List<Actor> Players { get; set; }
-        public Enemy BadGuy { get; set; }
         public int currentHealth = 100;
         int killCount = 0;
         int previousKillCount = 0;
@@ -415,16 +414,20 @@ Chance to Hit: 70
         {
 
             Console.WindowHeight = 45;
+            //this list is a new list of enemies
+            //1 new enemy per level
             this.Enemies = new List<Actor>();
+            //generate list
             for (int i = 0; i < levelCounter; i++)
             {
                 Enemies.Add(new Enemy("Replicant " + (i + 1), 50, 0));
             }
+            //list of players, can support more than 1, not implemented
             this.Players = new List<Actor>();
 
-
+            //game needs name at beginning of game
             Console.Write("Please enter your name: ");
-
+            //game needs selected superweapon before gameplay starts
             string userName = Console.ReadLine();
             Console.WriteLine("Please select your Super Weapon!");
             Console.WriteLine(@"
@@ -448,6 +451,7 @@ Select your Super Weapon:
                 int.TryParse(Console.ReadLine(), out number);
 
             }
+            //initializes player stats
             for (int i = 0; i < 1; i++)
             {
                 Players.Add(new Player(userName, 100, 50, number));
@@ -459,7 +463,7 @@ Select your Super Weapon:
 
         public void DisplayCombatInfo()
         {
-
+            //basic hud
             Console.Clear();
             Console.ForegroundColor = ConsoleColor.DarkCyan;
             Console.WriteLine(String.Format(@"
@@ -491,12 +495,14 @@ Replicants are infesting the city!   .......  @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
                        ) __, __,'    ...      ,'   0000a 0000000000000000000000
                         '--''        .      ,'     `00000a 00000000000000000000", number));
             HeadsUpDisplay();
+            //display each badguy name
             foreach (var baddie in Enemies)
             {
                 Console.WriteLine(baddie.Name);
             }
             Console.WriteLine();
             Console.WriteLine();
+            //player name display
             Console.WriteLine(Players[0].Name);
 
         }
@@ -509,33 +515,44 @@ Replicants are infesting the city!   .......  @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
                 {
 
                     DisplayCombatInfo();
+                    //player 1 attack enemies
                     Players[0].Attack(Enemies);
+                    //wait for user to read combat data
                     Console.WriteLine("Press any key to continue...");
                     Console.ReadKey();
                     //attack player
                     DisplayCombatInfo();
+                    //each bad guy attacks the player in turn
                     foreach (var baddies in Enemies)
                     {
                         baddies.Attack(Players);
                     }
+                    //player reads combat data
                     Console.WriteLine("Press any key to continue...");
                     Console.ReadKey();
                     DisplayCombatInfo();
+
+                    //kill cash reward formula
+                    //kill count is = to current list for each bad guy where not alive = true
                     killCount = Enemies.Where(x => x.HP == 0).Count();
+                    //if the current kill count is bigger than the previous kill count
                     if (killCount > previousKillCount)
                     {
+                        //player 1 money is = to the difference * 25, that way they don't earn more than 1 cash
+                        //increment per kill
                         Players[0].Money += (killCount - previousKillCount) * 25;
                         previousKillCount = killCount;
                     }
 
 
                 }
-
+                //if player 1 is alive at the end of the game
                 if (Players[0].IsAlive)
                 {
                     Console.WriteLine("You Win!!");
                     PlayAgain();
                 }
+                    //if any enemy is alive at the end of the game
                 else if (Enemies.Any(x => x.IsAlive))
                 {
                     Console.WriteLine("You Lose");
@@ -543,33 +560,41 @@ Replicants are infesting the city!   .......  @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
                 }
             }
         }
-
+        //does the user want to play again
         public void PlayAgain()
         {
             Console.WriteLine("Time to save another city! Y/N");
             string continueGame = Console.ReadLine().ToUpper();
             switch (continueGame)
             {
+                    //play again
                 case "Y":
 
+                    //reset kill counts
                     previousKillCount = 0;
                     killCount = 0;
+                    //if the users HP is 0 because of loss
                     if (Players[0].HP <= 0)
                     {
-
+                        //reset player hp
                         Players[0].HP = 100;
                     }
+                    //clear enemy list so dead enemies are not included when new list is generated
                     Enemies.Clear();
 
+                    //count levels
                     levelCounter++;
+                    //generate new enemy list per level
                     for (int i = 0; i < levelCounter; i++)
                     {
                         Enemies.Add(new Enemy(string.Format("Replicant {0}", i), 50, 0));
                     }
 
                     break;
+                    //don't play again
                 case "N":
                     Console.WriteLine("The end of the world was inevitable. ");
+                    Console.ReadKey();
                     keepPlaying = false;
                     GameOverAnimation();
                     break;
